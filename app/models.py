@@ -19,6 +19,29 @@ class User(db.Model, UserMixin):
         backref = db.backref('follows', lazy = 'dynamic'),
         lazy = 'dynamic'
 )
+    
+    accept = db.Table(
+        'follows',
+        db.Column('followed_by_id', db.Integer, db.ForeignKey('user.id'), nullable=False),
+        db.Column('following_id',db.Integer, db.ForeignKey('user.id'), nullable=False)
+    )
+
+    def __init__(self, username, email, password):
+        self.username = username
+        self.email = email
+        self.password = generate_password_hash(password)
+
+    def save_user(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def accept(self, user):
+        self.accept.append(user)
+        db.session.commit()
+    
+    def unaccept(self, user):
+        self.accept.remove(user)
+        db.session.commit()
 
 class Event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -33,12 +56,46 @@ class Event(db.Model):
     location = db.Column(db.String)
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    liked = db.relationship('User',
+    accepted = db.relationship('User',
             secondary = 'likes',
             backref = 'liked',
             lazy = 'dynamic'
                 )
+    likes = db.Table(
+        'likes',
+        db.Column('user_id', db.Integer, db.ForeignKey('user.id'), nullable=False),
+        db.Column('post_id', db.Integer, db.ForeignKey('post.id'), nullable=False)
+    )
+
+    def __init__(self, name, kindOf, startTime, endTime, reception, notes, participants, location):
+        self.name = name
+        self.kindOf = kindOf
+        self.startTime = startTime
+        self.endTime = endTime
+        self.reception = reception
+        self.notes = notes
+        self.participants = participants
+        self.location = location
+
+    def save_event(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def save_changes(self):
+        db.session.commit()
+
+    def delete_post(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    def accept(self, user):
+        self.following.append(user)
+        db.session.commit()
     
+    def unaccept(self, user):
+        self.following.remove(user)
+        db.session.commit()
+
 
 
 
@@ -47,17 +104,17 @@ class Event(db.Model):
 #     followed_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 #     following_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-follows = db.Table(
-    'follows',
-    db.Column('followed_by_id', db.Integer, db.ForeignKey('user.id'), nullable=False),
-    db.Column('following_id',db.Integer, db.ForeignKey('user.id'), nullable=False)
-)
+# follows = db.Table(
+#     'follows',
+#     db.Column('followed_by_id', db.Integer, db.ForeignKey('user.id'), nullable=False),
+#     db.Column('following_id',db.Integer, db.ForeignKey('user.id'), nullable=False)
+# )
 
-likes = db.Table(
-    'likes',
-    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), nullable=False),
-    db.Column('post_id', db.Integer, db.ForeignKey('post.id'), nullable=False)
-)
+# likes = db.Table(
+#     'likes',
+#     db.Column('user_id', db.Integer, db.ForeignKey('user.id'), nullable=False),
+#     db.Column('post_id', db.Integer, db.ForeignKey('post.id'), nullable=False)
+# )
 
 
 # class User(db.Model, UserMixin):
@@ -72,31 +129,31 @@ likes = db.Table(
     # p3.author
     # or user.post ====> [p321, p5464564, etc. . . ]
 
-    following = db.relationship('User',
-            primaryjoin = (follows.c.followed_by_id==id),
-            secondaryjoin = (follows.c.following_id==id),
-            secondary = follows,
-            backref = db.backref('follows', lazy = 'dynamic'),
-            lazy = 'dynamic'
-    )
+    # following = db.relationship('User',
+    #         primaryjoin = (follows.c.followed_by_id==id),
+    #         secondaryjoin = (follows.c.following_id==id),
+    #         secondary = follows,
+    #         backref = db.backref('follows', lazy = 'dynamic'),
+    #         lazy = 'dynamic'
+    # )
 
 
-    def __init__(self,username, email, password):
-        self.username = username
-        self.email = email
-        self.password = generate_password_hash(password)
+    # def __init__(self,username, email, password):
+    #     self.username = username
+    #     self.email = email
+    #     self.password = generate_password_hash(password)
 
-    def save_user(self):
-        db.session.add(self)
-        db.session.commit()
+    # def save_user(self):
+    #     db.session.add(self)
+    #     db.session.commit()
 
-    def follow(self, user):
-        self.following.append(user)
-        db.session.commit()
+    # def follow(self, user):
+    #     self.following.append(user)
+    #     db.session.commit()
     
-    def unfollow(self, user):
-        self.following.remove(user)
-        db.session.commit()
+    # def unfollow(self, user):
+    #     self.following.remove(user)
+    #     db.session.commit()
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
