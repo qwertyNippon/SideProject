@@ -42,14 +42,9 @@ class User(db.Model, UserMixin):
         db.session.commit()
 
 
-class accept(db.Model):
-    acceptedUser = db.Column('accepted_by_id', db.Integer, db.ForeignKey('user.id'), nullable=False),
-    
-    accept = db.Table(
-        'follows',
-        db.Column('followed_by_id', db.Integer, db.ForeignKey('user.id'), nullable=False),
-        db.Column('following_id',db.Integer, db.ForeignKey('user.id'), nullable=False)
-    )
+class Accept(db.Model):
+    acceptedUser = db.column(db.Integer, primary_key=True)
+    user_id = db.Column('accepted_by_id', db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     # accept = db.Table(
     #     'follows',
@@ -57,8 +52,9 @@ class accept(db.Model):
     #     db.Column('following_id',db.Integer, db.ForeignKey('user.id'), nullable=False)
     # )
 
-    def __init__(self, acceptedUser):
+    def __init__(self, acceptedUser, user_id):
         self.acceptedUser = acceptedUser
+        self.user_id = user_id
 
     def save_user(self):
         db.session.add(self)
@@ -85,12 +81,12 @@ class Event(db.Model):
     location = db.Column(db.String)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-    accepted = db.relationship('User', backref='user') 
+    accepted = db.relationship('AcceptedUser', backref='acceptedUser') 
             # secondary = 'likes',
             # backref = 'liked',
             
 
-    def __init__(self, name, kindOf, startTime, endTime, reception, notes, participants, location):
+    def __init__(self, name, kindOf, startTime, endTime, reception, notes, participants, location, acceptedUser):
         self.name = name
         self.kindOf = kindOf
         self.startTime = startTime
@@ -99,6 +95,7 @@ class Event(db.Model):
         self.notes = notes
         self.participants = participants
         self.location = location
+        self.acceptedUser = acceptedUser
 
     def save_event(self):
         db.session.add(self)
